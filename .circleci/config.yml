@@ -1,11 +1,22 @@
 version: 2.1
 
 jobs:
+
+  print-pipeline-info:
+    docker: 
+      - image: circleci/node:latest
+    steps:
+      - run: echo "Pipeline Id:<< pipeline.id >>"
+      - run: echo "Pipeline Number:<< pipeline.number >>"
+      - run: echo "Pipeline Git project url:<< pipeline.project.git_url >>"
+      - run: echo "Pipeline Project type:<< pipeline.project.git_url >>"
+      - run: echo "Pipeline Git branch:<< pipeline.git.branch >>"
+
   print-hello:
     # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
     docker:
-      - image: circleci/node:13.8.0
+      - image: circleci/node:latest
     steps:
       - checkout
       - run:
@@ -15,7 +26,7 @@ jobs:
 
   print-world:
     docker: 
-      - image: circleci/node:13.8.0    
+      - image: circleci/node:latest    
     steps:
       - checkout
       - run:
@@ -28,6 +39,7 @@ jobs:
 workflows:
   say-hello-workflow:
     jobs:
+      - print-pipeline-info
       - print-hello
       - print-world:
           requires: 
