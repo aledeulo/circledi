@@ -31,7 +31,7 @@ jobs:
       - checkout
       - run:
           name: "Say World"
-          command: "echo World"
+          command: "echo World Mr. $MY_NAME_IN_ENV_VAR"
 
 
 # Invoke jobs via workflows
