@@ -1,5 +1,11 @@
 version: 2.1
 
+executors:
+  alpine-executor-with-workspace:
+    docker:
+      - image: alpine:latest
+    working_directory: /tmp
+
 jobs:
 
   print-pipeline-info:
@@ -35,17 +41,14 @@ jobs:
 
 # Add two jobs, first one creates and persist output.txt file into the workspace which will be attaced to job number two to use output.txt file
   save_hello_world_output:
-    docker: 
-      - image: alpine:latest
+    executor: alpine-executor-with-workspace
     steps:
       - checkout
-      - run: 
-          name: "Create a share file for second job"
-          command: "echo 'text to output here.' > output.txt"
+      - run: mkdir -p circleci_workspace_<< pipeline.number >> && echo "text to output here!" > circleci_workspace_<< pipeline.number >>/output.txt 
       - persist_to_workspace:
-          root: /tmp/circleci_workspace_<< pipeline.number >>
+          root: circleci_workspace_<< pipeline.number >>
           paths:
-            - ./output.txt
+            - output.txt
 
   print_output_file:
     docker: 
@@ -57,7 +60,7 @@ jobs:
       - run:
           name: "Read and print from workspace"
           command: |
-              "cat output.txt"
+              "cat /tmp/circleci_workspace_<< pipeline.number >>/output.txt"
 
 
 # Invoke jobs via workflows
