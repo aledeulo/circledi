@@ -1,7 +1,7 @@
 version: 2.1
 
 # Add anchors to avoid repeat code int he jobs
-defaults_docker_images: &defaults_docker_images
+default_docker_node: &default_docker_node
   docker:
     - image: circleci/node:latest
 
@@ -28,7 +28,7 @@ commands:
 jobs:
 
   print-pipeline-info:
-    <<: *defaults_docker_images
+    <<: *default_docker_node
     steps:
       - run: echo "Pipeline Id:<< pipeline.id >>"
       - run: echo "Pipeline Number:<< pipeline.number >>"
@@ -39,7 +39,7 @@ jobs:
   print-hello:
     # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
-    <<: *defaults_docker_images
+    <<: *default_docker_node
     steps:
       - checkout
       - run:
@@ -48,7 +48,7 @@ jobs:
   
 
   print-world:
-    <<: *defaults_docker_images   
+    <<: *default_docker_node   
     steps:
       - checkout
       - run:
@@ -84,11 +84,24 @@ jobs:
       - print_pipeline_id:
           message: "${CIRCLE_WORKFLOW_ID}"
 
+  
+  # Create a job that fails to execute another job with on_fail filter
+  failing_job:
+    <<: *default_docker_node
+    steps:
+      - run: |
+          sudo -u root createuser -h localhost --superuser ubuntu &&
+          sudo createdb -h localhost test_db
+      - run:
+          name: Capturing failing flow
+          command: echo "This step can handle the rollback if the previous step fails"
+          when: on_fail
+
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
-  say-hello-workflow:
+  say_hello_workflow:
     jobs:
       - print-pipeline-info
       - print-hello
@@ -106,3 +119,7 @@ workflows:
   print_pipeline_id_with_commands:
     jobs:
       - print_from_command
+
+  create_user_fail_handling:
+    jobs:
+      - failing_job
