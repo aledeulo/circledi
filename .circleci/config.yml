@@ -1,17 +1,34 @@
 version: 2.1
 
+# Add anchors to avoid repeat code int he jobs
+defaults_docker_images: &defaults_docker_images
+  docker:
+    - image: circleci/node:latest
+
+defaults_docker_alpine: &defaults_docker_alpine
+  docker:
+    - image: alpine:latest
+
 # Add executors that can be used a job level. This helps to avoid boiler plate
 executors:
   alpine-executor-with-workspace:
-    docker:
-      - image: alpine:latest
+    <<: *defaults_docker_alpine
     working_directory: /tmp
+
+# Add commands to reuse them. Like functions in OOP
+commands:
+  print_pipeline_id:
+    parameters:
+      message:
+        type: string
+        default: "$CIRCLE_WORKFLOW_ID"
+    steps:
+      - run: echo << parameters.message >>
 
 jobs:
 
   print-pipeline-info:
-    docker: 
-      - image: circleci/node:latest
+    <<: *defaults_docker_images
     steps:
       - run: echo "Pipeline Id:<< pipeline.id >>"
       - run: echo "Pipeline Number:<< pipeline.number >>"
@@ -22,8 +39,7 @@ jobs:
   print-hello:
     # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
-    docker:
-      - image: circleci/node:latest
+    <<: *defaults_docker_images
     steps:
       - checkout
       - run:
@@ -32,8 +48,7 @@ jobs:
   
 
   print-world:
-    docker: 
-      - image: circleci/node:latest    
+    <<: *defaults_docker_images   
     steps:
       - checkout
       - run:
@@ -52,8 +67,7 @@ jobs:
             - output.txt
 
   print_output_file:
-    docker: 
-      - image: alpine:latest
+    executor: alpine-executor-with-workspace
     steps:
       - attach_workspace:
           at: /tmp/circleci_workspace_<< pipeline.number >>
@@ -63,6 +77,12 @@ jobs:
           name: "Read and print from workspace"
           command: |
               cat /tmp/circleci_workspace_<< pipeline.number >>/output.txt
+
+  print_from_command:
+    <<: *defaults_docker_alpine
+    steps:
+      - print_pipeline_id:
+          message: "$MY_NAME_IN_ENV_VAR"
 
 
 # Invoke jobs via workflows
@@ -82,3 +102,7 @@ workflows:
       - print_output_file:
           requires:
             - save_hello_world_output
+  
+  print_pipeline_id_with_commands:
+    jobs:
+      - print_from_command
