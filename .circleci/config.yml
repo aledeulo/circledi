@@ -33,6 +33,32 @@ jobs:
           name: "Say World"
           command: "echo World Mr. $MY_NAME_IN_ENV_VAR"
 
+# Add two jobs, first one creates and persist output.txt file into the workspace which will be attaced to job number two to use output.txt file
+  save_hello_world_output:
+    docker: 
+      - image: circleci/alpine:latest
+    steps:
+      - checkout
+      - run: 
+          name: "Create a share file for second job"
+          command: "echo 'text to output here.' > output.txt"
+      - persist_to_workspace:
+          root: /tmp/circleci_workspace_<< pipeline.number >>
+          paths:
+            - ./output.txt
+
+  print_output_file:
+    docker: 
+      - image: circleci/alpine:latest
+    steps:
+      - checkout        
+      - attach_workspace:
+          at: /tmp/circleci_workspace_<< pipeline.number >>
+      - run:
+          name: "Read and print from workspace"
+          command: |
+              "cat output.txt"
+
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
@@ -44,3 +70,10 @@ workflows:
       - print-world:
           requires: 
             - print-hello
+
+  share_output_file:
+    jobs:
+      - save_hello_world_output
+      - print_output_file:
+          requires:
+            - save_hello_world_output
