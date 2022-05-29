@@ -82,7 +82,7 @@ jobs:
     <<: *defaults_docker_alpine
     steps:
       - print_pipeline_id:
-          message: "$MY_NAME_IN_ENV_VAR"
+          message: "$CIRCLE_WORKFLOW_ID"
 
 
 # Invoke jobs via workflows
