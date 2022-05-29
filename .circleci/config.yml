@@ -1,5 +1,6 @@
 version: 2.1
 
+# Add executors that can be used a job level. This helps to avoid boiler plate
 executors:
   alpine-executor-with-workspace:
     docker:
