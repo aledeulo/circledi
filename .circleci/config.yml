@@ -43,7 +43,6 @@ jobs:
   save_hello_world_output:
     executor: alpine-executor-with-workspace
     steps:
-      - checkout
       - run: mkdir -p circleci_workspace_<< pipeline.number >> && echo "text to output here!" > circleci_workspace_<< pipeline.number >>/output.txt 
       - persist_to_workspace:
           root: circleci_workspace_<< pipeline.number >>
@@ -54,7 +53,6 @@ jobs:
     docker: 
       - image: alpine:latest
     steps:
-      - checkout        
       - attach_workspace:
           at: /tmp/circleci_workspace_<< pipeline.number >>
       - run:
