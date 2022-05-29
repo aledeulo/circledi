@@ -4,7 +4,7 @@ executors:
   alpine-executor-with-workspace:
     docker:
       - image: alpine:latest
-    working_directory: /tmp
+    working_directory: ~/tmp
 
 jobs:
 
@@ -44,9 +44,9 @@ jobs:
     executor: alpine-executor-with-workspace
     steps:
       - run: echo "Print pipeline number from first job:<< pipeline.number >>"
-      - run: mkdir -p circleci_workspace_<< pipeline.number >> && echo "text to output here!" > circleci_workspace_<< pipeline.number >>/output.txt 
+      - run: mkdir -p ~/tmp/circleci_workspace_<< pipeline.number >> && echo "text to output here!" > ~/tmp/circleci_workspace_<< pipeline.number >>/output.txt 
       - persist_to_workspace:
-          root: circleci_workspace_<< pipeline.number >>
+          root: ~/tmp/circleci_workspace_<< pipeline.number >>
           paths:
             - output.txt
 
@@ -55,12 +55,13 @@ jobs:
       - image: alpine:latest
     steps:
       - attach_workspace:
-          at: /tmp/circleci_workspace_<< pipeline.number >>
+          at: ~/tmp/circleci_workspace_<< pipeline.number >>
       - run: echo "Print pipeline number from second job:<< pipeline.number >>"
       - run:
           name: "Read and print from workspace"
           command: |
-              "cat /tmp/circleci_workspace_<< pipeline.number >>/output.txt"
+              ls -l \
+              cat ~/tmp/circleci_workspace_<< pipeline.number >>/output.txt
 
 
 # Invoke jobs via workflows
