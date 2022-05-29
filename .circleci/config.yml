@@ -36,7 +36,7 @@ jobs:
 # Add two jobs, first one creates and persist output.txt file into the workspace which will be attaced to job number two to use output.txt file
   save_hello_world_output:
     docker: 
-      - image: circleci/alpine:latest
+      - image: alpine:latest
     steps:
       - checkout
       - run: 
@@ -49,7 +49,7 @@ jobs:
 
   print_output_file:
     docker: 
-      - image: circleci/alpine:latest
+      - image: alpine:latest
     steps:
       - checkout        
       - attach_workspace:
