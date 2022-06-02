@@ -1,10 +1,34 @@
 version: 2.1
 
+# Add anchors to avoid repeat code int he jobs
+default_docker_node: &default_docker_node
+  docker:
+    - image: circleci/node:latest
+
+defaults_docker_alpine: &defaults_docker_alpine
+  docker:
+    - image: alpine:latest
+
+# Add executors that can be used a job level. This helps to avoid boiler plate
+executors:
+  alpine-executor-with-workspace:
+    <<: *defaults_docker_alpine
+    working_directory: /tmp
+
+# Add commands to reuse them. Like functions in OOP
+commands:
+  print_pipeline_id:
+    parameters:
+      message:
+        type: string
+        default: "${CIRCLE_WORKFLOW_ID}"
+    steps:
+      - run: echo << parameters.message >>
+
 jobs:
 
   print-pipeline-info:
-    docker: 
-      - image: circleci/node:latest
+    <<: *default_docker_node
     steps:
       - run: echo "Pipeline Id:<< pipeline.id >>"
       - run: echo "Pipeline Number:<< pipeline.number >>"
@@ -15,8 +39,7 @@ jobs:
   print-hello:
     # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
-    docker:
-      - image: circleci/node:latest
+    <<: *default_docker_node
     steps:
       - checkout
       - run:
@@ -25,22 +48,78 @@ jobs:
   
 
   print-world:
-    docker: 
-      - image: circleci/node:latest    
+    <<: *default_docker_node   
     steps:
       - checkout
       - run:
           name: "Say World"
           command: "echo World Mr. $MY_NAME_IN_ENV_VAR"
 
+# Add two jobs, first one creates and persist output.txt file into the workspace which will be attaced to job number two to use output.txt file
+  save_hello_world_output:
+    executor: alpine-executor-with-workspace
+    steps:
+      - run: echo "Print pipeline number from first job:<< pipeline.number >>"
+      - run: mkdir -p circleci_workspace_<< pipeline.number >> && echo "text to output here!" > circleci_workspace_<< pipeline.number >>/output.txt 
+      - persist_to_workspace:
+          root: circleci_workspace_<< pipeline.number >>
+          paths:
+            - output.txt
+
+  print_output_file:
+    executor: alpine-executor-with-workspace
+    steps:
+      - attach_workspace:
+          at: /tmp/circleci_workspace_<< pipeline.number >>
+      - run: echo "Print pipeline number from second job:<< pipeline.number >>"
+      - run: pwd && ls -l . 
+      - run:
+          name: "Read and print from workspace"
+          command: |
+              cat /tmp/circleci_workspace_<< pipeline.number >>/output.txt
+
+  print_from_command:
+    <<: *defaults_docker_alpine
+    steps:
+      - print_pipeline_id:
+          message: "${CIRCLE_WORKFLOW_ID}"
+
+  
+  # Create a job that fails to execute another job with on_fail filter
+  failing_job:
+    <<: *default_docker_node
+    steps:
+      - run: |
+          sudo -u root createuser -h localhost --superuser ubuntu &&
+          sudo createdb -h localhost test_db
+      - run:
+          name: Capturing failing flow
+          command: echo "This step can handle the rollback if the previous step fails"
+          when: on_fail
+
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
-  say-hello-workflow:
+  say_hello_workflow:
     jobs:
       - print-pipeline-info
       - print-hello
       - print-world:
           requires: 
             - print-hello
+
+  share_output_file:
+    jobs:
+      - save_hello_world_output
+      - print_output_file:
+          requires:
+            - save_hello_world_output
+  
+  print_pipeline_id_with_commands:
+    jobs:
+      - print_from_command
+
+  create_user_fail_handling:
+    jobs:
+      - failing_job
